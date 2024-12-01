@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factura POS</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Factura POS</h1>
+        <section class="invoice">
+            <h2>Detalles de la factura</h2>
+            <div class="invoice-details">
+                <label for="customer-name">Nombre del cliente:</label>
+                <input type="text" id="customer-name" placeholder="Ingrese el nombre del cliente" required>
+                <label for="invoice-date">Fecha:</label>
+                <input type="date" id="invoice-date" required>
+            </div>
+
+            <table id="invoice-table">
+                <thead>
+                    <tr>
+                        <th>ProductoID</th>
+                        <th>Cantidad Vendida</th>
+                        <th>Precio Venta</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody id="invoice-items">
+                    <!-- Los artículos se agregarán aquí -->
+                </tbody>
+            </table>
+
+            <div class="total">
+                <h3>Total: $<span id="total-amount">0.00</span></h3>
+            </div>
+
+            <div class="add-item">
+                <input type="number" id="item-product-id" placeholder="ProductoID" required>
+                <input type="number" id="item-quantity-sold" placeholder="Cantidad Vendida" min="1" required>
+                <input type="number" id="item-price" placeholder="Precio Venta" min="0" step="0.01" required>
+                <button id="add-item-button">Agregar artículo</button>
+            </div>
+
+            <button id="generate-invoice-button">Generar factura</button>
+        </section>
+
+        <section class="search-item">
+            <h2>Buscar Artículo</h2>
+            <input type="text" id="search-product-id" placeholder="ProductoID">
+            <button id="search-product-button">Buscar</button>
+            <div id="search-result"></div>
+        </section>
+
+        <section class="register-sale">
+            <h2>Registrar Venta</h2>
+            <input type="text" id="register-product-id" placeholder="ID del producto" required>
+            <input type="number" id="register-quantity-sold" placeholder="Cantidad Vendida" min="1" required>
+            <input type="date" id="register-sale-date" required>
+            <button id="registrar">Registrar</button>
+        </section>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const addItemButton = document.getElementById("add-item-button");
+            const invoiceItems = document.getElementById("invoice-items");
+            const totalAmount = document.getElementById("total-amount");
+            let total = 0;
+
+            // Función para agregar ítems a la factura
+            addItemButton.addEventListener("click", (e) => {
+                e.preventDefault();
+                const productId = document.getElementById("item-product-id").value;
+                const quantitySold = parseFloat(document.getElementById("item-quantity-sold").value);
+                const price = parseFloat(document.getElementById("item-price").value);
+                const itemTotal = quantitySold * price;
+
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${productId}</td>
+                    <td>${quantitySold}</td>
+                    <td>${price.toFixed(2)}</td>
+                    <td>${itemTotal.toFixed(2)}</td>
+                `;
+                
+                invoiceItems.appendChild(row);
+                total += itemTotal;
+                totalAmount.innerText = total.toFixed(2);
+            });
+
+            const registrar = document.getElementById("registrar");
+            registrar.addEventListener("click", (e) => {
+                e.preventDefault();
+                const registerProductId = document.getElementById("register-product-id").value;
+                const registerQuantitySold = document.getElementById("register-quantity-sold").value;
+                const saleDate = document.getElementById("register-sale-date").value;
+
+                const data = {
+                    ProductoID: registerProductId,
+                    CantidadVendida: registerQuantitySold,
+                    FechaVenta: saleDate,
+                };
+
+                fetch("https://localhost:44389/api/Ventas", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then((response) => {
+                    if (response.ok) {
+                        console.log("Datos enviados correctamente");
+                        window.location.href = "../view/index.html";
+                    } else {
+                        console.error("Error al enviar la solicitud:", response.status);
+                    }
+                })
+                .catch((error) => {
+                    console.error("Error al enviar la solicitud:", error);
+                });
+            });
+
+            // Función de búsqueda de artículo
+            const searchButton = document.getElementById("search-product-button");
+            searchButton.addEventListener("click", (e) => {
+                e.preventDefault();
+                const productId = document.getElementById("search-product-id").value;
+
+                fetch(`https://localhost:44389/api/Articulos/${productId}`)
+                    .then((response) => {
+                        if (response.ok) {
+                            return response.json();
+                        }
+                        throw new Error('Artículo no encontrado');
+                    })
+                    .then((product) => {
+                        const searchResult = document.getElementById("search-result");
+                        searchResult.innerHTML = `
+                            <p>ProductoID: ${product.ProductoID}</p>
+                            <p>Cantidad Disponible: ${product.CantidadDisponible}</p>
+                            <p>Precio Venta: $${product.PrecioVenta.toFixed(2)}</p>
+                        `;
+                    })
+                    .catch((error) => {
+                        console.error("Error al buscar el artículo:", error);
+                    });
+            });
+        });
+    </script>
+</body>
+</html>
+

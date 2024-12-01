@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Búsqueda de Artículo</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        section { 
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        input[type="text"], input[type="number"], input[type="date"] {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: #28a745;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        h2 {
+            margin-bottom: 10px;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <section class="search-item">
+        <h2>Buscar Artículo</h2>
+        <input type="text" id="item-code" placeholder="Código del artículo">
+        <button id="search-item-button">Buscar</button>
+        <div id="article-result" class="result"></div>
+    </section>
+
+    <section class="register-sale">
+        <h2>Registrar Venta</h2>
+        <input type="text" id="ProductoID" placeholder="ID del producto">
+        <input type="number" id="CantidadVendida" placeholder="Cantidad Vendida">
+        <input type="date" id="FechaVenta">
+        <button id="registrar">Registrar</button>
+        <div id="register-message" class="error"></div>
+    </section>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const searchButton = document.getElementById("search-item-button");
+            const articleResult = document.getElementById("article-result");
+
+            searchButton.addEventListener("click", () => {
+                const itemCode = document.getElementById("item-code").value;
+
+                if (itemCode) {
+                    fetch(`https://localhost:44389/api/Articulos/${itemCode}`)
+                        .then(response => {
+                            if (response.ok) {
+                                return response.json();
+                            } else {
+                                throw new Error("Artículo no encontrado.");
+                            }
+                        })
+                        .then(data => {
+                            articleResult.innerHTML = `<p>Artículo: ${data.nombre}, Precio: ${data.precio}</p>`;
+                        })
+                        .catch(error => {
+                            articleResult.innerHTML = `<p class="error">${error.message}</p>`;
+                        });
+                } else {
+                    alert("Por favor, ingresa un código de artículo.");
+                }
+            });
+
+            const registrar = document.getElementById("registrar");
+            const registerMessage = document.getElementById("register-message");
+
+            registrar.addEventListener("click", (e) => {
+                e.preventDefault();
+                const ProductoID = document.getElementById("ProductoID").value;
+                const CantidadVendida = document.getElementById("CantidadVendida").value;
+                const FechaVenta = document.getElementById("FechaVenta").value;
+
+                if(!ProductoID || !CantidadVendida || !FechaVenta) {
+                    registerMessage.innerText = "Por favor, completa todos los campos.";
+                    return;
+                }
+
+                const data = {
+                    ProductoID: ProductoID,
+                    CantidadVendida: CantidadVendida,
+                    FechaVenta: FechaVenta,
+                };
+
+                fetch("https://localhost:44389/api/Ventas", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(data)
+                })
+                    .then(response => {
+                        if (response.ok) {
+                            registerMessage.innerText = "Datos enviados correctamente.";
+                            window.location.href = "../view/index.html";
+                        } else {
+                            throw new Error("Error al enviar datos, intenta de nuevo.");
+                        }
+                    })
+                    .catch(error => {
+                        registerMessage.innerText = error.message;
+                    });
+            });
+        });
+    </script>
+</body>
+</html>
+
